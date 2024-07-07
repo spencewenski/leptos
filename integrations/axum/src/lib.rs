@@ -33,6 +33,10 @@
 //! [`examples`](https://github.com/leptos-rs/leptos/tree/main/examples)
 //! directory in the Leptos repository.
 
+use aide::axum::routing::{
+    delete_with, get_with, patch_with, post_with, put_with,
+};
+use aide::axum::RouterExt;
 use axum::{
     body::{Body, Bytes},
     extract::{FromRef, FromRequestParts, MatchedPath},
@@ -1647,6 +1651,204 @@ where
                     Method::PUT => put(handler),
                     Method::DELETE => delete(handler),
                     Method::PATCH => patch(handler),
+                    _ => {
+                        panic!(
+                            "Unsupported server function HTTP method: \
+                             {method:?}"
+                        );
+                    }
+                },
+            );
+        }
+
+        // register router paths
+        for listing in paths.iter() {
+            let path = listing.path();
+
+            for method in listing.methods() {
+                let cx_with_state = cx_with_state.clone();
+                let cx_with_state_and_method = move || {
+                    provide_context(method);
+                    cx_with_state();
+                };
+                router = if let Some(static_mode) = listing.static_mode() {
+                    #[cfg(feature = "default")]
+                    {
+                        static_route(
+                            router,
+                            path,
+                            LeptosOptions::from_ref(options),
+                            app_fn.clone(),
+                            cx_with_state_and_method.clone(),
+                            method,
+                            static_mode,
+                        )
+                    }
+                    #[cfg(not(feature = "default"))]
+                    {
+                        _ = static_mode;
+                        panic!(
+                            "Static site generation is not currently \
+                             supported on WASM32 server targets."
+                        )
+                    }
+                } else {
+                    router.route(
+                    path,
+                    match listing.mode() {
+                        SsrMode::OutOfOrder => {
+                            let s = render_app_to_stream_with_context(
+                                LeptosOptions::from_ref(options),
+                                cx_with_state_and_method.clone(),
+                                app_fn.clone(),
+                            );
+                            match method {
+                                leptos_router::Method::Get => get(s),
+                                leptos_router::Method::Post => post(s),
+                                leptos_router::Method::Put => put(s),
+                                leptos_router::Method::Delete => delete(s),
+                                leptos_router::Method::Patch => patch(s),
+                            }
+                        }
+                        SsrMode::PartiallyBlocked => {
+                            let s = render_app_to_stream_with_context_and_replace_blocks(
+                                LeptosOptions::from_ref(options),
+                                cx_with_state_and_method.clone(),
+                                app_fn.clone(),
+                                true
+                            );
+                            match method {
+                                leptos_router::Method::Get => get(s),
+                                leptos_router::Method::Post => post(s),
+                                leptos_router::Method::Put => put(s),
+                                leptos_router::Method::Delete => delete(s),
+                                leptos_router::Method::Patch => patch(s),
+                            }
+                        }
+                        SsrMode::InOrder => {
+                            let s = render_app_to_stream_in_order_with_context(
+                                LeptosOptions::from_ref(options),
+                                cx_with_state_and_method.clone(),
+                                app_fn.clone(),
+                            );
+                            match method {
+                                leptos_router::Method::Get => get(s),
+                                leptos_router::Method::Post => post(s),
+                                leptos_router::Method::Put => put(s),
+                                leptos_router::Method::Delete => delete(s),
+                                leptos_router::Method::Patch => patch(s),
+                            }
+                        }
+                        SsrMode::Async => {
+                            let s = render_app_async_with_context(
+                                LeptosOptions::from_ref(options),
+                                cx_with_state_and_method.clone(),
+                                app_fn.clone(),
+                            );
+                            match method {
+                                leptos_router::Method::Get => get(s),
+                                leptos_router::Method::Post => post(s),
+                                leptos_router::Method::Put => put(s),
+                                leptos_router::Method::Delete => delete(s),
+                                leptos_router::Method::Patch => patch(s),
+                            }
+                        }
+                    },
+                )
+                };
+            }
+        }
+
+        router
+    }
+
+    #[tracing::instrument(level = "trace", fields(error), skip_all)]
+    fn leptos_routes_with_handler<H, T>(
+        self,
+        paths: Vec<RouteListing>,
+        handler: H,
+    ) -> Self
+    where
+        H: axum::handler::Handler<T, S>,
+        T: 'static,
+    {
+        let mut router = self;
+        for listing in paths.iter() {
+            for method in listing.methods() {
+                router = router.route(
+                    listing.path(),
+                    match method {
+                        leptos_router::Method::Get => get(handler.clone()),
+                        leptos_router::Method::Post => post(handler.clone()),
+                        leptos_router::Method::Put => put(handler.clone()),
+                        leptos_router::Method::Delete => {
+                            delete(handler.clone())
+                        }
+                        leptos_router::Method::Patch => patch(handler.clone()),
+                    },
+                );
+            }
+        }
+        router
+    }
+}
+
+/// The default implementation of `LeptosRoutes` which takes in a list of paths, and dispatches GET requests
+/// to those paths to Leptos's renderer.
+#[cfg(feature = "aide")]
+impl<S> LeptosRoutes<S> for aide::axum::ApiRouter<S>
+where
+    LeptosOptions: FromRef<S>,
+    S: Clone + Send + Sync + 'static,
+{
+    #[tracing::instrument(level = "trace", fields(error), skip_all)]
+    fn leptos_routes<IV>(
+        self,
+        options: &S,
+        paths: Vec<RouteListing>,
+        app_fn: impl Fn() -> IV + Clone + Send + 'static,
+    ) -> Self
+    where
+        IV: IntoView + 'static,
+    {
+        self.leptos_routes_with_context(options, paths, || {}, app_fn)
+    }
+
+    #[tracing::instrument(level = "trace", fields(error), skip_all)]
+    fn leptos_routes_with_context<IV>(
+        self,
+        options: &S,
+        paths: Vec<RouteListing>,
+        additional_context: impl Fn() + 'static + Clone + Send,
+        app_fn: impl Fn() -> IV + Clone + Send + 'static,
+    ) -> Self
+    where
+        IV: IntoView + 'static,
+    {
+        // S represents the router's finished state allowing us to provide
+        // it to the user's server functions.
+        let state = options.clone();
+        let cx_with_state = move || {
+            provide_context::<S>(state.clone());
+            additional_context();
+        };
+
+        let mut router = self;
+
+        // register server functions first to allow for wildcard router path
+        for (path, method) in server_fn::axum::server_fn_paths() {
+            let cx_with_state = cx_with_state.clone();
+            let handler = move |req: Request<Body>| async move {
+                handle_server_fns_with_context(cx_with_state, req).await
+            };
+            router = router.route(
+                path,
+                match method {
+                    Method::GET => get_with(handler, |op| op),
+                    Method::POST => post_with(handler, |op| op),
+                    Method::PUT => put_with(handler, |op| op),
+                    Method::DELETE => delete_with(handler, |op| op),
+                    Method::PATCH => patch_with(handler, |op| op),
                     _ => {
                         panic!(
                             "Unsupported server function HTTP method: \

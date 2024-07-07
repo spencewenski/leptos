@@ -29,8 +29,9 @@ actix-web = { version = "4", optional = true }
 
 # axum
 axum = { version = "0.7", optional = true, default-features = false, features = [
-  "multipart",
+    "multipart",
 ] }
+aide = { version = "0.13.0", features = ["axum"], optional = true }
 tower = { version = "0.4", optional = true }
 tower-layer = { version = "0.3", optional = true }
 
@@ -50,9 +51,9 @@ bytes = "1"
 thiserror = "1"
 http-body-util = { version = "0.1.0", optional = true }
 rkyv = { version = "0.7", features = [
-  "validation",
-  "uuid",
-  "strict",
+    "validation",
+    "uuid",
+    "strict",
 ], optional = true }
 rmp-serde = { version = "1.1", optional = true }
 
@@ -63,39 +64,40 @@ wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 wasm-streams = { version = "0.4", optional = true }
 web-sys = { version = "0.3", optional = true, features = [
-  "console",
-  "ReadableStream",
-  "ReadableStreamDefaultReader",
+    "console",
+    "ReadableStream",
+    "ReadableStreamDefaultReader",
 ] }
 
 # reqwest client 
 reqwest = { version = "0.11", default-features = false, optional = true, features = [
-  "multipart",
-  "stream",
+    "multipart",
+    "stream",
 ] }
 url = "2"
 
 [features]
 default = ["json", "cbor"]
 axum-no-default = [
-  "ssr",
-  "dep:axum",
-  "dep:hyper",
-  "dep:http-body-util",
-  "dep:tower",
-  "dep:tower-layer",
+    "ssr",
+    "dep:axum",
+    "dep:hyper",
+    "dep:http-body-util",
+    "dep:tower",
+    "dep:tower-layer",
 ]
 form-redirects = []
 actix = ["ssr", "dep:actix-web", "dep:send_wrapper"]
 axum = ["axum/default", "axum-no-default"]
+aide = ["dep:aide", "axum"]
 browser = [
-  "dep:gloo-net",
-  "dep:js-sys",
-  "dep:send_wrapper",
-  "dep:wasm-bindgen",
-  "dep:web-sys",
-  "dep:wasm-streams",
-  "dep:wasm-bindgen-futures",
+    "dep:gloo-net",
+    "dep:js-sys",
+    "dep:send_wrapper",
+    "dep:wasm-bindgen",
+    "dep:web-sys",
+    "dep:wasm-streams",
+    "dep:wasm-bindgen-futures",
 ]
 json = []
 serde-lite = ["dep:serde-lite"]
@@ -116,80 +118,80 @@ rustdoc-args = ["--generate-link-to-definition"]
 # disables some feature combos for testing in CI
 [package.metadata.cargo-all-features]
 denylist = [
-  "rustls",
-  "default-tls",
-  "form-redirects",
-  "gloo-net",
-  "js-sys",
-  "wasm-bindgen",
-  "web-sys",
-  "tower",
-  "tower-layer",
-  "send_wrapper",
-  "ciborium",
-  "hyper",
-  "inventory",
-  "rkyv",
+    "rustls",
+    "default-tls",
+    "form-redirects",
+    "gloo-net",
+    "js-sys",
+    "wasm-bindgen",
+    "web-sys",
+    "tower",
+    "tower-layer",
+    "send_wrapper",
+    "ciborium",
+    "hyper",
+    "inventory",
+    "rkyv",
 ]
 skip_feature_sets = [
-  [
-    "actix",
-    "axum",
-  ],
-  [
-    "browser",
-    "actix",
-  ],
-  [
-    "browser",
-    "axum",
-  ],
-  [
-    "browser",
-    "reqwest",
-  ],
-  [
-    "default-tls",
-    "rustls",
-  ],
-  [
-    "browser",
-    "ssr",
-  ],
-  [
-    "axum-no-default",
-    "actix",
-  ],
-  [
-    "axum-no-default",
-    "browser",
-  ],
-  [
-    "rkyv",
-    "json",
-  ],
-  [
-    "rkyv",
-    "cbor",
-  ],
-  [
-    "rkyv",
-    "url",
-  ],
-  [
-    "rkyv",
-    "serde-lite",
-  ],
-  [
-    "url",
-    "json",
-  ],
-  [
-    "url",
-    "cbor",
-  ],
-  [
-    "url",
-    "serde-lite",
-  ],
+    [
+        "actix",
+        "axum",
+    ],
+    [
+        "browser",
+        "actix",
+    ],
+    [
+        "browser",
+        "axum",
+    ],
+    [
+        "browser",
+        "reqwest",
+    ],
+    [
+        "default-tls",
+        "rustls",
+    ],
+    [
+        "browser",
+        "ssr",
+    ],
+    [
+        "axum-no-default",
+        "actix",
+    ],
+    [
+        "axum-no-default",
+        "browser",
+    ],
+    [
+        "rkyv",
+        "json",
+    ],
+    [
+        "rkyv",
+        "cbor",
+    ],
+    [
+        "rkyv",
+        "url",
+    ],
+    [
+        "rkyv",
+        "serde-lite",
+    ],
+    [
+        "url",
+        "json",
+    ],
+    [
+        "url",
+        "cbor",
+    ],
+    [
+        "url",
+        "serde-lite",
+    ],
 ]

@@ -381,6 +381,13 @@ pub struct ServerFnTraitObj<Req, Res> {
     middleware: fn() -> MiddlewareSet<Req, Res>,
 }
 
+#[cfg(feature = "aide")]
+pub struct ServerFnTraitObj2<S> {
+    path: &'static str,
+    method: Method,
+    register_handler: fn(aide::axum::ApiRouter<S>) -> aide::axum::ApiRouter<S>,
+}
+
 impl<Req, Res> ServerFnTraitObj<Req, Res> {
     /// Converts the relevant parts of a server function into a trait object.
     pub const fn new(
