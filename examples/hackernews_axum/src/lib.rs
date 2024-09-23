@@ -8,6 +8,7 @@ use leptos_router::{
 };
 use routes::{nav::*, stories::*, story::*, users::*};
 use std::time::Duration;
+use leptos::server_fn::codec::GetUrl;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -27,9 +28,31 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[server(input = GetUrl)]
+async fn foo() -> Result<String, ServerFnError> {
+    let _options = expect_context::<LeptosOptions>();
+
+    Ok("Foo".to_string())
+}
+
+#[derive(Clone)]
+struct FooContext(Resource<Result<String, ServerFnError>>);
+
+fn provide_foo_context() {
+    let foo = Resource::new(
+        move || (),
+        move |_| async move {
+            foo().await
+        },
+    );
+
+    provide_context(FooContext(foo));
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    provide_foo_context();
     let (is_routing, set_is_routing) = signal(false);
 
     view! {
