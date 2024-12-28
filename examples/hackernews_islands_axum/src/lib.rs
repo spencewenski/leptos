@@ -28,6 +28,81 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+/// Minimal reproduction of a hydration error.
+///
+/// Error:
+///
+/// ```plaintext
+/// A hydration error occurred while trying to hydrate an element defined at src/lib.rs:79:10.
+///
+/// The framework expected an HTML <div> element, but found this instead:  
+/// #text "Bar"
+///     ...
+///     parentElement: <div>
+///     ...
+///
+/// The hydration mismatch may have occurred slightly earlier, but this is the first time the framework found a node of an unexpected type.
+/// ```
+///
+/// Note the following:
+/// - Parent (`Foo`) is an island
+///     - Issue does not repro if `Foo` is a component
+/// - Parent contains a `Transition` with a view rendered in a `Suspend`
+///     - Issue does not repro if `Bar` and `Baz` are not in a `Transition` + `Suspend`
+/// - `Suspend`'s view contains two islands
+///     - Issue does not repro if only `Bar` is present
+///     - Issue does not repro if either or both of `Bar`/`Baz` are components
+///
+/// Interestingly, and possibly related, the error is different if `Bar`/`Baz` are replaced with `Bar2`/`Baz2`:
+///
+/// ```plaintext
+/// panicked at /home/spencer/code/leptos/tachys/src/html/mod.rs:188:14:
+/// called `Option::unwrap()` on a `None` value
+/// ```
+#[island]
+fn Foo() -> impl IntoView {
+    view! {
+        <Transition>
+            {move || Suspend::new(async move {
+                    view! {
+                        <Bar/>
+                        <Baz/>
+                        // <Bar2/>
+                        // <Baz2/>
+                    }
+            })}
+        </Transition>
+    }
+}
+
+#[island]
+fn Bar() -> impl IntoView {
+    view! {
+        <div>"Bar"</div>
+    }
+}
+
+#[island]
+fn Baz() -> impl IntoView {
+    view! {
+        <div>"Baz"</div>
+    }
+}
+
+#[island]
+fn Bar2() -> impl IntoView {
+    view! {
+        <div><p>"Bar2"</p></div>
+    }
+}
+
+#[island]
+fn Baz2() -> impl IntoView {
+    view! {
+        <div><p>"Baz2"</p></div>
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
@@ -36,16 +111,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/hackernews.css"/>
         <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
         <Meta name="description" content="Leptos implementation of a HackerNews demo."/>
-        <Router>
-            <Nav />
-            <main>
-                <FlatRoutes fallback=|| "Not found.">
-                    <Route path=(StaticSegment("users"), ParamSegment("id")) view=User/>
-                    <Route path=(StaticSegment("stories"), ParamSegment("id")) view=Story/>
-                    <Route path=OptionalParamSegment("stories") view=Stories/>
-                </FlatRoutes>
-            </main>
-        </Router>
+        <Foo/>
     }
 }
 
