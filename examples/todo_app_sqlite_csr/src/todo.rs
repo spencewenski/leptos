@@ -1,6 +1,8 @@
 use crate::error_template::ErrorTemplate;
 use leptos::either::Either;
 use leptos::prelude::*;
+use leptos_router::components::{Route, Router, Routes};
+use leptos_router::path;
 use serde::{Deserialize, Serialize};
 use server_fn::ServerFnError;
 
@@ -77,6 +79,8 @@ pub async fn delete_todo(id: u16) -> Result<(), ServerFnError> {
     use self::ssr::*;
     let mut conn = db().await?;
 
+    leptos_axum::redirect("/foo");
+
     Ok(sqlx::query("DELETE FROM todos WHERE id = $1")
         .bind(id)
         .execute(&mut conn)
@@ -91,8 +95,20 @@ pub fn TodoApp() -> impl IntoView {
             <h1>"My Tasks"</h1>
         </header>
         <main>
-            <Todos/>
+            <Router>
+                <Routes fallback=|| "Not found">
+                    <Route path=path!("/") view=Todos />
+                    <Route path=path!("/foo") view=Foo />
+                </Routes>
+            </Router>
         </main>
+    }
+}
+
+#[component]
+fn Foo() -> impl IntoView {
+    view! {
+        <p>"Foo"</p>
     }
 }
 
