@@ -13,7 +13,7 @@ async fn main() {
     let conf = get_configuration(Some("Cargo.toml")).unwrap();
     let leptos_options = conf.leptos_options;
     let addr = leptos_options.site_addr;
-    let routes = generate_route_list(App);
+    let routes = generate_route_list(app::App);
 
     let predicate = SizeAbove::new(1500) // files smaller than 1501 bytes are not compressed, since the MTU (Maximum Transmission Unit) of a TCP packet is 1500 bytes
         .and(NotForContentType::GRPC)
@@ -27,7 +27,7 @@ async fn main() {
     let app = Router::new()
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
-            move || shell(leptos_options.clone())
+            move || app::shell(leptos_options.clone())
         })
         .layer(
             CompressionLayer::new()
