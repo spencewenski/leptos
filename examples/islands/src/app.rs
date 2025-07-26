@@ -35,7 +35,7 @@ pub fn App() -> impl IntoView {
     }
 }
 
-#[island]
+#[island(lazy)]
 pub fn OuterIsland(children: Children) -> impl IntoView {
     provide_context(42i32);
     view! {
