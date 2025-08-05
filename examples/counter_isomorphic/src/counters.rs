@@ -46,9 +46,7 @@ pub async fn adjust_server_count(
 pub async fn clear_server_count() -> Result<i32, ServerFnError> {
     use ssr_imports::*;
 
-    COUNT.store(0, Ordering::Relaxed);
-    _ = COUNT_CHANNEL.send(&0).await;
-    Ok(0)
+    Err(ServerFnError::new("foo"))
 }
 #[component]
 pub fn Counters() -> impl IntoView {
